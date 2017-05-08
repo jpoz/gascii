@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"image/png"
-	"os"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/jpoz/gascii"
 )
@@ -15,11 +19,30 @@ func check(e error) {
 }
 
 func main() {
-	f, err := os.Open("./chris.png")
-	check(err)
+	filename := "chris.png"
+	f, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return
+	}
 
-	image, err := png.Decode(f)
-	check(err)
+	contentType := http.DetectContentType(f)
+	buff := bytes.NewBuffer(f)
+	var img image.Image
+
+	switch contentType {
+	case "image/jpeg":
+		img, err = jpeg.Decode(buff)
+		if err != nil {
+			return
+		}
+	case "image/png":
+		img, err = png.Decode(buff)
+		if err != nil {
+			return
+		}
+	default:
+		return
+	}
 
 	config := gascii.Config{
 		CanvasWidth: 80,
@@ -31,7 +54,7 @@ func main() {
 
 	g := gascii.Gascii{
 		Config: &config,
-		Image:  image,
+		Image:  img,
 	}
 
 	g.Print()
